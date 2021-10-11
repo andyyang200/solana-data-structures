@@ -15,7 +15,8 @@ use crate::{error::VectorError::*, state::*};
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct InitializeParams{
     pub element_size: u64,
-    pub max_length: u64
+    pub max_length: u64,
+
 }
 
 
@@ -28,6 +29,7 @@ pub enum Instruction {
     /// 2. Vector Meta Account
     /// 3. system program
     /// 4. rent
+    /// 5. accounts for the list
     Initialize {
         params: InitializeParams,
     },
