@@ -59,7 +59,7 @@ impl Instruction {
     }   
 }
 
-fn initialize_vector(
+pub fn initialize_vector(
     accounts: &[AccountInfo],
     max_length: u64,
     element_size: u64,
@@ -74,7 +74,7 @@ fn initialize_vector(
     )
 }
 
-fn initialize_vector_signed(
+pub fn initialize_vector_signed(
     accounts: &[AccountInfo],
     max_length: u64,
     element_size: u64,
@@ -163,7 +163,7 @@ fn initialize_vector_signed(
     Ok(())
 }
 
-fn push(
+pub fn push(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
@@ -210,7 +210,7 @@ fn push(
     Ok(())
 }
 
-fn pop(
+pub fn pop(
     accounts: &[AccountInfo],
     num_elements: u64,
 ) -> Result<Vec<u8>, ProgramError> {
@@ -256,7 +256,7 @@ fn pop(
     Ok(ret)
 }
 
-fn slice(
+pub fn slice(
     accounts: &[AccountInfo],
     start: u64,
     end: u64,
@@ -294,7 +294,7 @@ fn slice(
     Ok(ret)
 }
 
-fn get(
+pub fn get(
     accounts: &[AccountInfo],
     index: u64,
 ) -> Result<Vec<u8>, ProgramError> {
@@ -305,7 +305,7 @@ fn get(
     )?).pop().ok_or(ProgramError::InvalidArgument)?)
 }
 
-fn delete(
+pub fn delete(
     accounts: &[AccountInfo],
 ) -> ProgramResult{
 

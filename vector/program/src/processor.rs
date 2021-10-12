@@ -2,7 +2,6 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
-    program::{invoke, invoke_signed},
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
@@ -12,7 +11,9 @@ use solana_program::{
 
 use borsh::{BorshDeserialize};
 
-use crate::{error::*, instruction::*, state::*};
+use crate::error::VectorError;
+use crate::instruction::{Instruction, InitializeParams, PopParams, GetParams, SliceParams,
+                         initialize_vector_signed, push, pop, get, slice, delete};
 
 pub struct Processor;
 impl Processor {
@@ -62,6 +63,8 @@ impl Processor {
         max_length: u64,
         program_id: &Pubkey,
     ) -> ProgramResult {
+
+        initialize_vector_signed(accounts, max_length, element_size, program_id, &[]);
         Ok(())
     }
 
