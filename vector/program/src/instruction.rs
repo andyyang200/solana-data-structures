@@ -24,6 +24,11 @@ pub struct PopParams{
 }
 
 #[derive(BorshDeserialize, PartialEq, Debug)]
+pub struct GetParams{
+    pub index: u64,
+}
+
+#[derive(BorshDeserialize, PartialEq, Debug)]
 pub struct SliceParams{
     pub start: u64,
     pub end: u64,
@@ -68,7 +73,6 @@ fn initialize_vector(
         &[]
     )
 }
-
 
 fn initialize_vector_signed(
     accounts: &[AccountInfo],
@@ -325,7 +329,6 @@ fn delete(
         **auth_lamports += **account_lamports;
         **account_lamports = 0;
     }
-
 
     Ok(())
 }
