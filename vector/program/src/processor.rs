@@ -38,10 +38,19 @@ impl Processor {
                 let params = PopParams::try_from_slice(rest).unwrap();
                 Self::process_pop(accounts, params.num_elements)
             }
+            Instruction::Get => {
+                msg!("Instruction: Get");
+                let params = GetParams::try_from_slice(rest).unwrap();
+                Self::process_get(accounts, params.index)
+            }
             Instruction::Slice => {
                 msg!("Instruction: Slice");
                 let params = SliceParams::try_from_slice(rest).unwrap();
                 Self::process_slice(accounts, params.start, params.end)
+            }
+            Instruction::Delete => {
+                msg!("Instruction: Delete");
+                Self::process_delete(accounts)
             }
 
         }
@@ -70,6 +79,13 @@ impl Processor {
         Ok(())
     }
 
+    fn process_get(
+        accounts: &[AccountInfo],
+        index: u64,
+    ) -> ProgramResult {
+        Ok(())
+    }
+
     fn process_slice(
         accounts: &[AccountInfo],
         start: u64,
@@ -78,9 +94,8 @@ impl Processor {
         Ok(())
     }
 
-    fn process_get(
+    fn process_delete(
         accounts: &[AccountInfo],
-        index: u64,
     ) -> ProgramResult {
         Ok(())
     }
