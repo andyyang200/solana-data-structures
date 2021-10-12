@@ -10,9 +10,7 @@ use solana_program::{
     system_instruction::*,
 };
 
-use borsh::{BorshSerialize, BorshDeserialize};
-
-use std::str;
+use borsh::{BorshDeserialize};
 
 use crate::{error::*, instruction::*, state::*};
 
@@ -23,77 +21,67 @@ impl Processor {
         accounts: &[AccountInfo],
         instruction_data: &[u8],
     ) -> ProgramResult {
-        let instruction = Instruction::unpack(instruction_data)?;
+        let (tag, rest) = instruction_data.split_first().ok_or(ProgramError::InvalidInstructionData)?;
+        let instruction = Instruction::unpack(tag)?;
         match instruction {
-            Instruction::Initialize { params } => {
+            Instruction::Initialize => {
                 msg!("Instruction: Initialize");
-                Self::process_initialize(accounts, params, program_id)
+                let params = InitializeParams::try_from_slice(rest).unwrap();
+                Self::process_initialize(accounts, params.element_size, params.max_length, program_id)
             },
+            Instruction::Push => {
+                msg!("Instruction: Push");
+                Self::process_push(accounts, rest)
+            }
+            Instruction::Pop => {
+                msg!("Instruction: Pop");
+                let params = PopParams::try_from_slice(rest).unwrap();
+                Self::process_pop(accounts, params.num_elements)
+            }
+            Instruction::Slice => {
+                msg!("Instruction: Slice");
+                let params = SliceParams::try_from_slice(rest).unwrap();
+                Self::process_slice(accounts, params.start, params.end)
+            }
+
         }
     }
 
     fn process_initialize(
         accounts: &[AccountInfo],
-        params: InitializeParams,
+        element_size: u64,
+        max_length: u64,
         program_id: &Pubkey,
     ) -> ProgramResult {
-
-        // parse
-        
-        let account_info_iter = &mut accounts.iter();
-
-        let auth = next_account_info(account_info_iter)?;
-        let vector_meta_account = next_account_info(account_info_iter)?;
-        let system_program = next_account_info(account_info_iter)?;
-        let rent_info = next_account_info(account_info_iter)?;
-        let rent = &Rent::from_account_info(rent_info)?;
-
-        let element_size = params.element_size;
-        let max_length = params.max_length;
-
-        msg!("done parsing accounts and instruction data");
-        
-        // create vector meta account if it doesn't exist
-        if (vector_meta_account.data_len() == 0){
-
-            let seeds_vector_meta = &[b"vector_meta", auth.key.as_ref()];
-            let (key, bump_seed) = Pubkey::find_program_address(seeds_vector_meta, program_id);
-            if key != *vector_meta_account.key {
-                msg!("wrong key");
-                return Err(VectorError::UnexpectedAccount.into());;
-            }
-            let seeds_vector_meta_with_bump = &[b"vector_meta", auth.key.as_ref(), &[bump_seed]];
-
-            let space = VECTOR_META_LEN;
-            let required_lamports = rent.minimum_balance(space as usize);
-            invoke_signed(
-                &solana_program::system_instruction::create_account(
-                    auth.key,
-                    vector_meta_account.key,
-                    required_lamports,
-                    space,
-                    program_id,
-                ),
-                &[
-                    auth.clone(),
-                    vector_meta_account.clone(),
-                ],
-                &[seeds_vector_meta_with_bump],
-            )?;
-        }
-
-        let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
-
-        vector_meta.auth = *auth.key;
-        vector_meta.element_size = element_size;
-        vector_meta.length = 0;
-
-        vector_meta.serialize(&mut *vector_meta_account.data.borrow_mut())?;
-
-        msg!("completed initialize"); 
-
         Ok(())
     }
 
+    fn process_push(
+        accounts: &[AccountInfo],
+        data: &[u8]
+    ) -> ProgramResult {
+        Ok(())
+    }
 
+    fn process_pop(
+        accounts: &[AccountInfo],
+        num_elements: u64,
+    ) -> ProgramResult {
+        Ok(())
+    }
+
+    fn process_slice(
+        accounts: &[AccountInfo],
+        start: u64,
+        end: u64,
+    ) -> ProgramResult {
+        Ok(())
+    }
+
+    fn process_get(
+        accounts: &[AccountInfo],
+        index: u64,
+    ) -> ProgramResult {
+        Ok(())
+    }
 }
