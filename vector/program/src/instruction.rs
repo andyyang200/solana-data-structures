@@ -95,7 +95,7 @@ fn initialize_vector_signed(
         vector_accounts.push(next_account_info(account_info_iter)?);
     }
 
-    msg!("done parsing accounts and instruction data");
+    msg!("Done parsing accounts and instruction data");
     
     // create vector meta account if it doesn't exist
     if vector_meta_account.data_len() == 0{
@@ -132,7 +132,7 @@ fn initialize_vector_signed(
     let mut vector_accounts_index = 0;
     while size_to_allocate > 0 {
         if vector_accounts_index == vector_accounts.len(){
-            msg!("not enough accounts");
+            msg!("Not enough accounts");
             return Err(ProgramError::NotEnoughAccountKeys);
         }
 
@@ -158,11 +158,10 @@ fn initialize_vector_signed(
         vector_accounts_index += 1;
     }
 
-    msg!("completed initialize"); 
+    msg!("Completed initialize"); 
 
     Ok(())
 }
-
 
 fn push(
     accounts: &[AccountInfo],
@@ -181,13 +180,13 @@ fn push(
     let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
     if data.len() % (vector_meta.element_size) as usize != 0{
-        msg!("data length not multiple of element size");
+        msg!("Data length not multiple of element size");
         return Err(ProgramError::InvalidArgument);
     }
 
     let delta = data.len() as u64 / vector_meta.element_size;
     if vector_meta.length + delta > vector_meta.max_length{
-        msg!("not enough space");
+        msg!("Not enough space");
         return Err(VectorError::InsufficientSpace.into());
     }
 
@@ -228,7 +227,7 @@ fn pop(
     let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
     if vector_meta.length < num_elements{
-        msg!("not enough elements to pop");
+        msg!("Not enough elements to pop");
         return Err(VectorError::InsufficientSpace.into());
     }
 
@@ -332,10 +331,3 @@ fn delete(
 
     Ok(())
 }
-
-
-
-
-
-
-
