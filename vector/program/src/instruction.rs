@@ -302,6 +302,33 @@ fn get(
     )?).pop().ok_or(ProgramError::InvalidArgument)?)
 }
 
+fn delete(
+    accounts: &[AccountInfo],
+) -> ProgramResult{
+
+    let account_info_iter = &mut accounts.iter().peekable();
+    let auth = next_account_info(account_info_iter)?;
+    let vector_meta_account = next_account_info(account_info_iter)?;
+    let mut vector_accounts = Vec::new();
+    while account_info_iter.peek().is_some(){
+        vector_accounts.push(next_account_info(account_info_iter)?);
+    }
+
+    let mut auth_lamports = auth.lamports.borrow_mut();
+    let mut vector_meta_lamports = vector_meta_account.lamports.borrow_mut();
+
+    **auth_lamports += **vector_meta_lamports;
+    **vector_meta_lamports = 0;
+
+    for i in 0..vector_accounts.len(){
+        let mut account_lamports = vector_accounts[i].lamports.borrow_mut();
+        **auth_lamports += **account_lamports;
+        **account_lamports = 0;
+    }
+
+
+    Ok(())
+}
 
 
 
