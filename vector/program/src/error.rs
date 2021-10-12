@@ -4,22 +4,10 @@ use solana_program::program_error::ProgramError;
 
 #[derive(Error, Debug, Copy, Clone)]
 pub enum VectorError {
-    /// Invalid instruction
-    #[error("Invalid Instruction")]
-    InvalidInstruction,
-    /// Not Rent Exempt
-    #[error("Not Rent Exempt")]
-    NotRentExempt,
-    /// Expected Amount Mismatch
-    #[error("Expected Amount Mismatch")]
-    ExpectedAmountMismatch,
-    /// Amount Overflow
-    #[error("Amount Overflow")]
-    AmountOverflow,
-    /// Amount Overflow
-    #[error("Unexpected Account")]
-    UnexpectedAccount,
-    /// Amount Overflow
+    #[error("Insufficient Space")]
+    InsufficientSpace,
+    #[error("Pop From Empty Vector")]
+    PopFromEmpty,
     #[error("Other Error")]
     OtherError,
 }
