@@ -279,7 +279,7 @@ pub fn push(
     Ok(())
 }
 
-pub fn pop(
+pub fn pop_slice(
     accounts: &[AccountInfo],
     num_elements: u64,
 ) -> Result<Vec<Vec<u8>>, ProgramError> {
@@ -323,6 +323,17 @@ pub fn pop(
     vector_meta.serialize(&mut *vector_meta_account.data.borrow_mut())?;
 
     Ok(ret)
+}
+
+pub fn pop(
+    accounts: &[AccountInfo],
+) -> Result<Vec<u8>, ProgramError> {
+
+    Ok((pop_slice(
+        accounts,
+        1
+    )?).pop().ok_or(ProgramError::InvalidArgument)?)
+
 }
 
 pub fn slice(
