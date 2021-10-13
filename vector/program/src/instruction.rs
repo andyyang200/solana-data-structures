@@ -59,22 +59,6 @@ impl Instruction {
     }   
 }
 
-// pub fn initialize_vector(
-//     accounts: &[AccountInfo],
-//     max_length: u64,
-//     element_size: u64,
-//     program_id: &Pubkey,
-// ) -> ProgramResult {
-//     initialize_vector_signed(
-//         accounts,
-//         max_length,
-//         element_size,
-//         program_id,
-//         &[],
-//         &[],
-//     )
-// }
-
 pub fn initialize_vector(
     accounts: &[AccountInfo],
     max_length: u64,
@@ -298,7 +282,7 @@ pub fn push(
 pub fn pop(
     accounts: &[AccountInfo],
     num_elements: u64,
-) -> Result<Vec<u8>, ProgramError> {
+) -> Result<Vec<Vec<u8>>, ProgramError> {
 
     let account_info_iter = &mut accounts.iter().peekable();
 
