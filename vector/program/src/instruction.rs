@@ -2,7 +2,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
-    program::{invoke_signed},
+    program::{invoke, invoke_signed},
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar}
@@ -74,6 +74,90 @@ impl Instruction {
 //         &[],
 //     )
 // }
+
+pub fn initialize_vector(
+    accounts: &[AccountInfo],
+    max_length: u64,
+    element_size: u64,
+    program_id: &Pubkey,
+) -> ProgramResult {
+
+    let account_info_iter = &mut accounts.iter().peekable();
+    let auth = next_account_info(account_info_iter)?;
+    let vector_meta_account = next_account_info(account_info_iter)?;
+    // let system_program = next_account_info(account_info_iter)?;
+    let rent_info = next_account_info(account_info_iter)?;
+    let rent = &Rent::from_account_info(rent_info)?;
+    let mut vector_accounts = Vec::new();
+    while account_info_iter.peek().is_some(){
+        vector_accounts.push(next_account_info(account_info_iter)?);
+    }
+
+    msg!("Done parsing accounts and instruction data");
+    
+    // create vector meta account if it doesn't exist
+    if vector_meta_account.data_len() == 0{
+
+        let space = VECTOR_META_LEN;
+        let required_lamports = rent.minimum_balance(space as usize);
+        invoke(
+            &solana_program::system_instruction::create_account(
+                auth.key,
+                vector_meta_account.key,
+                required_lamports,
+                space,
+                program_id,
+            ),
+            &[
+                auth.clone(),
+                vector_meta_account.clone(),
+            ],
+        )?;
+    }
+
+    let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
+
+    vector_meta.max_length = max_length;
+    vector_meta.element_size = element_size;
+    vector_meta.length = 0;
+    vector_meta.max_elements_per_account = MAX_ACCOUNT_SIZE / element_size;
+    vector_meta.max_bytes_per_account = vector_meta.max_elements_per_account * element_size;
+
+    vector_meta.serialize(&mut *vector_meta_account.data.borrow_mut())?;
+
+    let mut size_to_allocate = max_length * element_size;
+    let mut vector_accounts_index = 0;
+    while size_to_allocate > 0 {
+        if vector_accounts_index == vector_accounts.len(){
+            msg!("Not enough accounts");
+            return Err(ProgramError::NotEnoughAccountKeys);
+        }
+
+
+        let space = min(size_to_allocate, vector_meta.max_bytes_per_account);
+        let required_lamports = rent.minimum_balance(space as usize);
+        invoke(
+            &solana_program::system_instruction::create_account(
+                auth.key,
+                vector_accounts[vector_accounts_index].key,
+                required_lamports,
+                space,
+                program_id,
+            ),
+            &[
+                auth.clone(),
+                vector_accounts[vector_accounts_index].clone(),
+            ]
+        )?;
+
+        size_to_allocate -= space;
+        vector_accounts_index += 1;
+    }
+
+    msg!("Completed initialize"); 
+
+    Ok(())
+}
 
 pub fn initialize_vector_signed(
     accounts: &[AccountInfo],
