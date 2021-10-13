@@ -14,8 +14,8 @@ use crate::{error::VectorError, state::{MAX_ACCOUNT_SIZE, VECTOR_META_LEN, Vecto
 
 #[derive(BorshDeserialize, PartialEq, Debug)]
 pub struct InitializeParams{
-    pub element_size: u64,
     pub max_length: u64,
+    pub element_size: u64,
 }
 
 #[derive(BorshDeserialize, PartialEq, Debug)]
