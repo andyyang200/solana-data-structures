@@ -39,7 +39,6 @@ pub enum Instruction {
     Push,
     Pop,
     Get,
-    Slice,
     Delete
 }
 
@@ -52,8 +51,7 @@ impl Instruction {
             1 => Self::Push,
             2 => Self::Pop,
             3 => Self::Get,
-            4 => Self::Slice,
-            5 => Self::Delete,
+            4 => Self::Delete,
             _ => return Err(ProgramError::InvalidInstructionData),
         })
     }   
