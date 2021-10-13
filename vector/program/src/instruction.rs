@@ -25,11 +25,6 @@ pub struct PopParams{
 
 #[derive(BorshDeserialize, PartialEq, Debug)]
 pub struct GetParams{
-    pub index: u64,
-}
-
-#[derive(BorshDeserialize, PartialEq, Debug)]
-pub struct SliceParams{
     pub start: u64,
     pub end: u64,
 }
