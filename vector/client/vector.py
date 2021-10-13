@@ -11,13 +11,13 @@ from solana.system_program import SYS_PROGRAM_ID
 
 
 PID = PublicKey('9ijP4o3M3PoZ57oP3Jkyjq54ZU3vt2JSnAvvomfU6woF')
+CLIENT_ADDRESS = "https://api.devnet.solana.com"
 
 class Vector:
     
-    def __init__(self, auth, max_length=1048576, element_size=1, num_accounts = 10, program_id=PID, run_transaction = True):
+    def __init__(self, auth, max_length=1048576, element_size=1, num_accounts = 10, program_id=PID, client_address=CLIENT_ADDRESS, run_transaction = True):
         assert(isinstance(auth, Keypair))
-
-        self.solana_client = Client("https://api.devnet.solana.com")
+        self.solana_client = Client(client_address)
 
         self.auth = auth
         self.element_size = element_size
@@ -123,11 +123,5 @@ class Vector:
 
         tx = Transaction().add(instruction)
         tx_sig = self.solana_client.send_transaction(tx, self.auth)
-        return tx_sig
-
-
-
-
-
-        
+        return tx_sig        
     
