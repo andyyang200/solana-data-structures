@@ -113,26 +113,27 @@ pub fn initialize_vector(
             return Err(ProgramError::NotEnoughAccountKeys);
         }
 
+        if vector_accounts[vector_accounts_index].data_len() == 0{
+            let space = min(size_to_allocate, vector_meta.max_bytes_per_account);
+            let required_lamports = rent.minimum_balance(space as usize);
+            invoke(
+                &solana_program::system_instruction::create_account(
+                    auth.key,
+                    vector_accounts[vector_accounts_index].key,
+                    required_lamports,
+                    space,
+                    program_id,
+                ),
+                &[
+                    auth.clone(),
+                    vector_accounts[vector_accounts_index].clone(),
+                    system_program.clone(),
+                ]
+            )?;
 
-        let space = min(size_to_allocate, vector_meta.max_bytes_per_account);
-        let required_lamports = rent.minimum_balance(space as usize);
-        invoke(
-            &solana_program::system_instruction::create_account(
-                auth.key,
-                vector_accounts[vector_accounts_index].key,
-                required_lamports,
-                space,
-                program_id,
-            ),
-            &[
-                auth.clone(),
-                vector_accounts[vector_accounts_index].clone(),
-                system_program.clone(),
-            ]
-        )?;
-
-        size_to_allocate -= space;
-        vector_accounts_index += 1;
+            size_to_allocate -= space;
+            vector_accounts_index += 1;
+        }
     }
 
     msg!("Completed initialize"); 
@@ -269,13 +270,13 @@ pub fn push(
     let mut vector_data_index = (vector_meta.length % vector_meta.max_elements_per_account) as usize;
 
     for data_index in 0..data.len(){
-        if vector_data_index as u64 > vector_meta.max_bytes_per_account{
+        vector_data[vector_data_index] = data[data_index];
+        vector_data_index += 1;
+        if vector_data_index as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index += 1;
             vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
             vector_data_index = 0;
         }
-        vector_data[vector_data_index] = data[data_index];
-        vector_data_index += 1;
     }
 
     vector_meta.length += delta;
@@ -315,13 +316,13 @@ pub fn pop_slice(
     let mut vector_data_index = (start % vector_meta.max_elements_per_account) as usize;
 
     for _x in 0..num_elements{
-        if vector_data_index as u64 > vector_meta.max_bytes_per_account{
+        ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
+        vector_data_index += vector_meta.element_size as usize;
+        if vector_data_index as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index += 1;
             vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
             vector_data_index = 0;
         }
-        ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
-        vector_data_index += vector_meta.element_size as usize;
     }
 
     vector_meta.length = new_length;
@@ -367,13 +368,13 @@ pub fn slice(
     let mut vector_data_index = (start % vector_meta.max_elements_per_account) as usize;
 
     for _x in 0..num_elements{
-        if vector_data_index as u64 > vector_meta.max_bytes_per_account{
+        ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
+        vector_data_index += vector_meta.element_size as usize;
+        if vector_data_index as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index += 1;
             vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
             vector_data_index = 0;
         }
-        ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
-        vector_data_index += vector_meta.element_size as usize;
     }
 
     Ok(ret)
@@ -407,48 +408,45 @@ pub fn remove_slice(
 
     let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
+    let mut vector_account_refs = Vec::new();
+    for i in 0..vector_accounts.len(){
+        vector_account_refs.push(vector_accounts[i].data.borrow_mut());
+    }
+
     let mut ret = Vec::new();
 
     let num_elements = end - start;
 
     let mut vector_accounts_index = (start / vector_meta.max_elements_per_account) as usize;
-    let mut vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
     let mut vector_data_index = (start % vector_meta.max_elements_per_account) as usize;
-
     for _x in 0..num_elements{
-        if vector_data_index as u64 > vector_meta.max_bytes_per_account{
+        ret.push(vector_account_refs[vector_accounts_index][vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
+        vector_data_index += vector_meta.element_size as usize;
+        if vector_data_index as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index += 1;
-            vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
             vector_data_index = 0;
         }
-        ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
-        vector_data_index += vector_meta.element_size as usize;
     }
 
     let new_length = vector_meta.length - num_elements;
 
     let mut vector_accounts_index_a = (start / vector_meta.max_elements_per_account) as usize;
-    let mut vector_data_a = vector_accounts[vector_accounts_index_a].data.borrow_mut();
     let mut vector_data_index_a = (start % vector_meta.max_elements_per_account) as usize;
     let mut vector_accounts_index_b = (end / vector_meta.max_elements_per_account) as usize;
-    let mut vector_data_b = vector_accounts[vector_accounts_index_b].data.borrow_mut();
     let mut vector_data_index_b = (end % vector_meta.max_elements_per_account) as usize;
     for _x in 0..(new_length - start) * vector_meta.element_size{
-        
-        if vector_data_index_a as u64 > vector_meta.max_bytes_per_account{
+        vector_account_refs[vector_accounts_index_a][vector_data_index_a] = vector_account_refs[vector_accounts_index_b][vector_data_index_b];
+        vector_data_index_a += 1;
+        vector_data_index_b += 1;
+        if vector_data_index_a as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index_a += 1;
-            vector_data_a = vector_accounts[vector_accounts_index_a].data.borrow_mut();
             vector_data_index_a = 0;
         }
 
-        if vector_data_index as u64 > vector_meta.max_bytes_per_account{
+        if vector_data_index_b as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index_b += 1;
-            vector_data_b = vector_accounts[vector_accounts_index_b].data.borrow_mut();
             vector_data_index_b = 0;
         }
-        vector_data_a[vector_data_index_a] = vector_data_b[vector_data_index_b];
-        vector_data_index_a += 1;
-        vector_data_index_b += 1;
     }
 
     vector_meta.length = new_length;

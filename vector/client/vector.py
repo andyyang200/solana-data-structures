@@ -95,6 +95,21 @@ class Vector:
         tx_sig = self.solana_client.send_transaction(tx, self.auth)
         return tx_sig
 
+
+    def remove(self, start, end):
+        keys = [
+            AccountMeta(self.meta_key, False, True),
+        ]
+        for i in range(0, self.num_accounts):
+            keys += [AccountMeta(self.account_keys[i], False, True)]
+
+        instruction_data = struct.pack('<BQQ', 4, start, end)
+        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
+
+        tx = Transaction().add(instruction)
+        tx_sig = self.solana_client.send_transaction(tx, self.auth)
+        return tx_sig
+
     def delete(self):
         keys = [
             AccountMeta(self.auth.public_key, True, False),
@@ -103,7 +118,7 @@ class Vector:
         for i in range(0, self.num_accounts):
             keys += [AccountMeta(self.account_keys[i], False, True)]
 
-        instruction_data = struct.pack('<B', 4)
+        instruction_data = struct.pack('<B', 5)
         instruction = TransactionInstruction(keys, self.program_id, instruction_data)
 
         tx = Transaction().add(instruction)
