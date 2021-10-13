@@ -265,9 +265,9 @@ pub fn push(
         return Err(VectorError::InsufficientSpace.into());
     }
 
-    let mut vector_accounts_index = ((vector_meta.length + 1) / vector_meta.max_elements_per_account) as usize;
+    let mut vector_accounts_index = (vector_meta.length / vector_meta.max_elements_per_account) as usize;
     let mut vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
-    let mut vector_data_index = (vector_meta.length % vector_meta.max_elements_per_account) as usize;
+    let mut vector_data_index = ((vector_meta.length % vector_meta.max_elements_per_account) * vector_meta.element_size) as usize;
 
     for data_index in 0..data.len(){
         vector_data[vector_data_index] = data[data_index];
@@ -313,7 +313,7 @@ pub fn pop_slice(
 
     let mut vector_accounts_index = (start / vector_meta.max_elements_per_account) as usize;
     let mut vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
-    let mut vector_data_index = (start % vector_meta.max_elements_per_account) as usize;
+    let mut vector_data_index = ((start % vector_meta.max_elements_per_account) * vector_meta.element_size) as usize;
 
     for _x in 0..num_elements{
         ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
@@ -365,7 +365,7 @@ pub fn slice(
 
     let mut vector_accounts_index = (start / vector_meta.max_elements_per_account) as usize;
     let mut vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
-    let mut vector_data_index = (start % vector_meta.max_elements_per_account) as usize;
+    let mut vector_data_index = ((start % vector_meta.max_elements_per_account) * vector_meta.element_size) as usize;
 
     for _x in 0..num_elements{
         ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
@@ -418,7 +418,7 @@ pub fn remove_slice(
     let num_elements = end - start;
 
     let mut vector_accounts_index = (start / vector_meta.max_elements_per_account) as usize;
-    let mut vector_data_index = (start % vector_meta.max_elements_per_account) as usize;
+    let mut vector_data_index = ((start % vector_meta.max_elements_per_account) * vector_meta.element_size) as usize;
     for _x in 0..num_elements{
         ret.push(vector_account_refs[vector_accounts_index][vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
         vector_data_index += vector_meta.element_size as usize;
@@ -431,9 +431,9 @@ pub fn remove_slice(
     let new_length = vector_meta.length - num_elements;
 
     let mut vector_accounts_index_a = (start / vector_meta.max_elements_per_account) as usize;
-    let mut vector_data_index_a = (start % vector_meta.max_elements_per_account) as usize;
+    let mut vector_data_index_a = ((start % vector_meta.max_elements_per_account) * vector_meta.element_size) as usize;
     let mut vector_accounts_index_b = (end / vector_meta.max_elements_per_account) as usize;
-    let mut vector_data_index_b = (end % vector_meta.max_elements_per_account) as usize;
+    let mut vector_data_index_b = ((end % vector_meta.max_elements_per_account) * vector_meta.element_size) as usize;
     for _x in 0..(new_length - start) * vector_meta.element_size{
         vector_account_refs[vector_accounts_index_a][vector_data_index_a] = vector_account_refs[vector_accounts_index_b][vector_data_index_b];
         vector_data_index_a += 1;
