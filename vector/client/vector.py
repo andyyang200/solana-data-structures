@@ -1,4 +1,4 @@
-from .account_info import Client
+from account_info import Client
 from solana.publickey import PublicKey
 import struct
 
@@ -10,12 +10,15 @@ from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.system_program import SYS_PROGRAM_ID
 
 
-PID = PublicKey('88uZSCS75MubFukG9XsAY4uaTNDuHexLQe7B6mQexx5d')
+PID = PublicKey('9ijP4o3M3PoZ57oP3Jkyjq54ZU3vt2JSnAvvomfU6woF')
 
 class Vector:
     
-    def __init__(self, auth, max_length=1048576, element_size=1, num_accounts = 10, program_id=PID):
+    def __init__(self, auth, max_length=1048576, element_size=1, num_accounts = 10, program_id=PID, run_transaction = True):
         assert(isinstance(auth, Keypair))
+
+        self.solana_client = Client("https://api.devnet.solana.com")
+
         self.element_size = element_size
         self.max_length = max_length
         self.program_id = program_id if isinstance(program_id, PublicKey) else PublicKey(program_id)
@@ -28,19 +31,31 @@ class Vector:
             self.account_keys.append(key)
             self.account_bumpers.append(bumper)
 
+        if not run_transaction:
+            return
+
         keys = [
-            AccountMeta(auth.key, True, False),
+            AccountMeta(auth.public_key, True, False),
             AccountMeta(self.meta_key, False, True),
             AccountMeta(SYSVAR_RENT_PUBKEY, False, False),
         ]
         for i in range(0, num_accounts):
             keys += [AccountMeta(self.account_keys[i], False, True)]
 
-        instruction_data = struct.pack('<BQQB'+'B'*num_accounts, 0, max_length, element_size)
-        instruction = TransactionInstruction{
-            keys, program_id, 
+        instruction_data = struct.pack('<BQQB'+'B'*num_accounts, 0, max_length, element_size, self.meta_bumper, *self.account_bumpers)
+        instruction = TransactionInstruction(keys, program_id, instruction_data)
 
-        }
+        tx = Transaction().add(instruction)
+        tx_sig = self.solana_client.send_transaction(tx, auth)
+
+        print(tx_sig)
+
+        
+    
+
+
+
+
 
         
     
