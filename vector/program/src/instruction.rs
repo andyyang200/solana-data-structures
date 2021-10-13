@@ -59,31 +59,31 @@ impl Instruction {
     }   
 }
 
-pub fn initialize_vector(
-    accounts: &[AccountInfo],
-    max_length: u64,
-    element_size: u64,
-    program_id: &Pubkey,
-) -> ProgramResult {
-    initialize_vector_signed(
-        accounts,
-        max_length,
-        element_size,
-        program_id,
-        &[]
-    )
-}
+// pub fn initialize_vector(
+//     accounts: &[AccountInfo],
+//     max_length: u64,
+//     element_size: u64,
+//     program_id: &Pubkey,
+// ) -> ProgramResult {
+//     initialize_vector_signed(
+//         accounts,
+//         max_length,
+//         element_size,
+//         program_id,
+//         &[],
+//         &[],
+//     )
+// }
 
 pub fn initialize_vector_signed(
     accounts: &[AccountInfo],
     max_length: u64,
     element_size: u64,
     program_id: &Pubkey,
-    signers_seeds: &[&[&[u8]]],
+    meta_seeds: &[&[u8]],
+    vector_bump_seeds: &[u8],
 ) -> ProgramResult {
 
-    // parse
-    
     let account_info_iter = &mut accounts.iter().peekable();
     let auth = next_account_info(account_info_iter)?;
     let vector_meta_account = next_account_info(account_info_iter)?;
@@ -114,7 +114,7 @@ pub fn initialize_vector_signed(
                 auth.clone(),
                 vector_meta_account.clone(),
             ],
-            signers_seeds
+            &[meta_seeds]
         )?;
     }
 
@@ -151,7 +151,8 @@ pub fn initialize_vector_signed(
                 auth.clone(),
                 vector_accounts[vector_accounts_index].clone(),
             ],
-            signers_seeds
+            &[&[vector_meta_account.key.as_ref(), &[vector_accounts_index as u8], 
+              &[vector_bump_seeds[vector_accounts_index]]]],
         )?;
 
         size_to_allocate -= space;
