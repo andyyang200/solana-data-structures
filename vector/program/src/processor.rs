@@ -27,8 +27,9 @@ impl Processor {
         match instruction {
             Instruction::Initialize => {
                 msg!("Instruction: Initialize");
-                let params = InitializeParams::try_from_slice(rest).unwrap();
-                Self::process_initialize(accounts, params.element_size, params.max_length, program_id)
+                let (inputs, seeds) = rest.split_at(16);
+                let params = InitializeParams::try_from_slice(inputs).unwrap();
+                Self::process_initialize(accounts, params.max_length, params.element_size, program_id, seeds)
             },
             Instruction::Push => {
                 msg!("Instruction: Push");
@@ -59,12 +60,15 @@ impl Processor {
 
     fn process_initialize(
         accounts: &[AccountInfo],
-        element_size: u64,
         max_length: u64,
+        element_size: u64,
         program_id: &Pubkey,
+        seeds: &[u8],
     ) -> ProgramResult {
-
-        initialize_vector_signed(accounts, max_length, element_size, program_id, &[]);
+        let auth = next_account_info(&mut accounts.iter())?;
+        let (meta_bumper, vector_bumper_seeds) = seeds.split_first().ok_or(ProgramError::InvalidInstructionData)?;
+        let meta_seeds = &[auth.key.as_ref(), &element_size.to_le_bytes(), &max_length.to_le_bytes(), &[*meta_bumper]];
+        initialize_vector_signed(accounts, max_length, element_size, program_id, meta_seeds, vector_bumper_seeds)?;
         Ok(())
     }
 
@@ -72,6 +76,7 @@ impl Processor {
         accounts: &[AccountInfo],
         data: &[u8]
     ) -> ProgramResult {
+        push(accounts, data)?;
         Ok(())
     }
 
