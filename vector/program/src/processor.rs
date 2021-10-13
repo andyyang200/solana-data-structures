@@ -3,17 +3,12 @@ use solana_program::{
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
-    sysvar::{rent::Rent, Sysvar},
-    system_instruction::*,
 };
-
 use borsh::{BorshDeserialize};
 
-use crate::error::VectorError;
-use crate::instruction::{Instruction, InitializeParams, PopParams, GetParams, SliceParams,
-                         initialize_vector_signed, push, pop, get, slice, delete};
+use crate::instruction::{Instruction, InitializeParams, PopParams, GetParams,
+                         initialize_vector_signed, push, pop_slice, slice, delete};
 
 pub struct Processor;
 impl Processor {
@@ -43,18 +38,12 @@ impl Processor {
             Instruction::Get => {
                 msg!("Instruction: Get");
                 let params = GetParams::try_from_slice(rest).unwrap();
-                Self::process_get(accounts, params.index)
-            }
-            Instruction::Slice => {
-                msg!("Instruction: Slice");
-                let params = SliceParams::try_from_slice(rest).unwrap();
-                Self::process_slice(accounts, params.start, params.end)
+                Self::process_get(accounts, params.start, params.end)
             }
             Instruction::Delete => {
                 msg!("Instruction: Delete");
                 Self::process_delete(accounts)
             }
-
         }
     }
 
@@ -84,27 +73,32 @@ impl Processor {
         accounts: &[AccountInfo],
         num_elements: u64,
     ) -> ProgramResult {
+        let res = pop_slice(accounts, num_elements)?;
+        msg!("Popped the entries:");
+        for i in 0..res.len(){
+            msg!{"{:?}", res[i]};
+        }
         Ok(())
     }
 
     fn process_get(
         accounts: &[AccountInfo],
-        index: u64,
-    ) -> ProgramResult {
-        Ok(())
-    }
-
-    fn process_slice(
-        accounts: &[AccountInfo],
         start: u64,
         end: u64,
     ) -> ProgramResult {
+        let res = slice(accounts, start, end)?;
+        msg!("Got the entries:");
+        for i in 0..res.len(){
+            msg!{"{:?}", res[i]};
+        }
         Ok(())
     }
 
     fn process_delete(
         accounts: &[AccountInfo],
     ) -> ProgramResult {
+        delete(accounts)?;
+        msg!("Removed the lamports from all the accounts");
         Ok(())
     }
 }
