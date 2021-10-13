@@ -315,8 +315,8 @@ pub fn pop(
             vector_data = vector_accounts[vector_accounts_index].data.borrow_mut();
             vector_data_index = 0;
         }
-        ret.push(vector_data[vector_data_index]);
-        vector_data_index += 1;
+        ret.push(vector_data[vector_data_index..(vector_data_index + vector_meta.element_size as usize)].to_vec());
+        vector_data_index += vector_meta.element_size as usize;
     }
 
     vector_meta.length = new_length;
