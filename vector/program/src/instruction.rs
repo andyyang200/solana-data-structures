@@ -79,7 +79,7 @@ pub fn initialize_vector_signed(
     max_length: u64,
     element_size: u64,
     program_id: &Pubkey,
-    signers_seeds: &[&[u8]],
+    signers_seeds: &[&[&[u8]]],
 ) -> ProgramResult {
 
     // parse
@@ -114,7 +114,7 @@ pub fn initialize_vector_signed(
                 auth.clone(),
                 vector_meta_account.clone(),
             ],
-            &[signers_seeds]
+            signers_seeds
         )?;
     }
 
@@ -151,7 +151,7 @@ pub fn initialize_vector_signed(
                 auth.clone(),
                 vector_accounts[vector_accounts_index].clone(),
             ],
-            &[signers_seeds]
+            signers_seeds
         )?;
 
         size_to_allocate -= space;
