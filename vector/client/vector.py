@@ -19,8 +19,10 @@ class Vector:
 
         self.solana_client = Client("https://api.devnet.solana.com")
 
+        self.auth = auth
         self.element_size = element_size
         self.max_length = max_length
+        self.num_accounts = num_accounts
         self.program_id = program_id if isinstance(program_id, PublicKey) else PublicKey(program_id)
         self.meta_key, self.meta_bumper = PublicKey.find_program_address([bytes(auth.public_key), struct.pack('<Q', max_length), struct.pack('<Q', element_size)], self.program_id)
         
@@ -35,8 +37,9 @@ class Vector:
             return
 
         keys = [
-            AccountMeta(auth.public_key, True, False),
+            AccountMeta(self.auth.public_key, True, False),
             AccountMeta(self.meta_key, False, True),
+            AccountMeta(SYS_PROGRAM_ID, False, False),
             AccountMeta(SYSVAR_RENT_PUBKEY, False, False),
         ]
         for i in range(0, num_accounts):
@@ -46,12 +49,66 @@ class Vector:
         instruction = TransactionInstruction(keys, program_id, instruction_data)
 
         tx = Transaction().add(instruction)
-        tx_sig = self.solana_client.send_transaction(tx, auth)
+        self.init_tx_sig = self.solana_client.send_transaction(tx, auth)
 
-        print(tx_sig)
+    def push(self, data):
 
-        
-    
+        keys = [
+            AccountMeta(self.meta_key, False, True),
+        ]
+        for i in range(0, self.num_accounts):
+            keys += [AccountMeta(self.account_keys[i], False, True)]
+
+        instruction_data = struct.pack('<B', 1) + data
+        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
+
+        tx = Transaction().add(instruction)
+        tx_sig = self.solana_client.send_transaction(tx, self.auth)
+        return tx_sig
+
+    def pop(self, num_elements):
+
+        keys = [
+            AccountMeta(self.meta_key, False, True),
+        ]
+        for i in range(0, self.num_accounts):
+            keys += [AccountMeta(self.account_keys[i], False, True)]
+
+        instruction_data = struct.pack('<BQ', 2, num_elements)
+        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
+
+        tx = Transaction().add(instruction)
+        tx_sig = self.solana_client.send_transaction(tx, self.auth)
+        return tx_sig
+
+    def get(self, start, end):
+        keys = [
+            AccountMeta(self.meta_key, False, True),
+        ]
+        for i in range(0, self.num_accounts):
+            keys += [AccountMeta(self.account_keys[i], False, True)]
+
+        instruction_data = struct.pack('<BQQ', 3, start, end)
+        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
+
+        tx = Transaction().add(instruction)
+        tx_sig = self.solana_client.send_transaction(tx, self.auth)
+        return tx_sig
+
+    def delete(self):
+        keys = [
+            AccountMeta(self.auth.public_key, True, False),
+            AccountMeta(self.meta_key, False, True),
+        ]
+        for i in range(0, self.num_accounts):
+            keys += [AccountMeta(self.account_keys[i], False, True)]
+
+        instruction_data = struct.pack('<B', 4)
+        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
+
+        tx = Transaction().add(instruction)
+        tx_sig = self.solana_client.send_transaction(tx, self.auth)
+        return tx_sig
 
 
 

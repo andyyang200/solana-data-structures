@@ -8,8 +8,8 @@ pub enum VectorError {
     InsufficientSpace,
     #[error("Pop From Empty Vector")]
     PopFromEmpty,
-    #[error("Other Error")]
-    OtherError,
+    #[error("Overflow")]
+    Overflow,
 }
 
 impl From<VectorError> for ProgramError {

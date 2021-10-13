@@ -8,7 +8,7 @@ use solana_program::{
 use borsh::{BorshDeserialize};
 
 use crate::instruction::{Instruction, InitializeParams, PopParams, GetParams,
-                         initialize_vector_signed, push, pop_slice, slice, delete};
+                         initialize_vector_signed, push, pop_slice, slice, remove_slice, delete};
 
 pub struct Processor;
 impl Processor {
@@ -40,6 +40,11 @@ impl Processor {
                 let params = GetParams::try_from_slice(rest).unwrap();
                 Self::process_get(accounts, params.start, params.end)
             }
+            Instruction::Remove => {
+                msg!("Instruction: Remove");
+                let params = GetParams::try_from_slice(rest).unwrap();
+                Self::process_remove(accounts, params.start, params.end)
+            }
             Instruction::Delete => {
                 msg!("Instruction: Delete");
                 Self::process_delete(accounts)
@@ -56,7 +61,7 @@ impl Processor {
     ) -> ProgramResult {
         let auth = next_account_info(&mut accounts.iter())?;
         let (meta_bumper, vector_bumper_seeds) = seeds.split_first().ok_or(ProgramError::InvalidInstructionData)?;
-        let meta_seeds = &[auth.key.as_ref(), &element_size.to_le_bytes(), &max_length.to_le_bytes(), &[*meta_bumper]];
+        let meta_seeds = &[auth.key.as_ref(), &max_length.to_le_bytes(), &element_size.to_le_bytes(), &[*meta_bumper]];
         initialize_vector_signed(accounts, max_length, element_size, program_id, meta_seeds, vector_bumper_seeds)?;
         Ok(())
     }
@@ -88,6 +93,19 @@ impl Processor {
     ) -> ProgramResult {
         let res = slice(accounts, start, end)?;
         msg!("Got the entries:");
+        for i in 0..res.len(){
+            msg!{"{:?}", res[i]};
+        }
+        Ok(())
+    }
+
+    fn process_remove(
+        accounts: &[AccountInfo],
+        start: u64,
+        end: u64,
+    ) -> ProgramResult {
+        let res = remove_slice(accounts, start, end)?;
+        msg!("Removed the entries:");
         for i in 0..res.len(){
             msg!{"{:?}", res[i]};
         }

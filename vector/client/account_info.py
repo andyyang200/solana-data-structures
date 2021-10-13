@@ -18,7 +18,8 @@ class Client:
     def account_data(self, pubkey):
         if not isinstance(pubkey, PublicKey):
             pubkey = PublicKey(pubkey)
-        data = self.solana_client.get_account_info(pubkey).get('result', {}).get('value', {}).get('data')
+        data = self.solana_client.get_account_info(pubkey).get('result', {}).get('value', {})
+        data = data.get('data', None) if data is not None else None
         if data is None:
             return
         elif data[1] not in DECODER:
