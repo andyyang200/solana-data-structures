@@ -246,6 +246,18 @@ pub fn initialize_deque_signed(
     Ok(())
 }
 
+pub fn length(
+    accounts: &[AccountInfo],
+) -> Result<u64, ProgramError> {
+
+    let account_info_iter = &mut accounts.iter().peekable();
+
+    let vector_meta_account = next_account_info(account_info_iter)?;
+    let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
+
+    Ok((vector_meta.length))
+}
+
 pub fn push_front(
     accounts: &[AccountInfo],
     data: &[u8],
