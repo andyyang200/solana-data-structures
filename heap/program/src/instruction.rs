@@ -260,7 +260,7 @@ pub fn push(
         return Err(ProgramError::InvalidArgument);
     }
 
-    if heap_meta.length + 1 >= heap_meta.max_length{
+    if heap_meta.length >= heap_meta.max_length{
         msg!("Not enough space");
         return Err(HeapError::InsufficientSpace.into());
     }
@@ -279,10 +279,11 @@ pub fn push(
         heap_account_refs[heap_accounts_index_cur][heap_data_index_cur + i] = data[i];
     }
 
-    // swaps to maintain heap invariant
-    let mut element_cur = (heap_account_refs[heap_accounts_index_cur][heap_data_index_cur..heap_data_index_cur + heap_meta.element_size as usize]).to_vec();
+    // use swaps to maintain heap invariant
+    let element_cur = (heap_account_refs[heap_accounts_index_cur][heap_data_index_cur..heap_data_index_cur + heap_meta.element_size as usize]).to_vec();
     while cur != 0{
         let par = (cur - 1) / 2;
+        msg!("par: {}", par);
         let heap_accounts_index_par = (par / heap_meta.max_elements_per_account) as usize;
         let heap_data_index_par = ((par % heap_meta.max_elements_per_account) * heap_meta.element_size) as usize;
 
@@ -290,6 +291,7 @@ pub fn push(
         if compare(&element_cur, &element_par)? >= 0{
             break;
         }
+        msg!("swapping with parent");
         // swap with parent
         for i in 0..heap_meta.element_size as usize{
             let tmp = heap_account_refs[heap_accounts_index_cur][heap_data_index_cur + i];
@@ -299,7 +301,6 @@ pub fn push(
         cur = par;
         heap_accounts_index_cur = heap_accounts_index_par;
         heap_data_index_cur = heap_data_index_par;
-        element_cur = element_par;
     }
 
     heap_meta.length += 1;
@@ -342,9 +343,9 @@ pub fn pop(
     }
 
     // write leaf into root
-    let len = heap_meta.length;
-    let heap_accounts_index_leaf = (len / heap_meta.max_elements_per_account) as usize;
-    let heap_data_index_leaf = ((len % heap_meta.max_elements_per_account) * heap_meta.element_size) as usize;
+    let last = heap_meta.length - 1;
+    let heap_accounts_index_leaf = (last / heap_meta.max_elements_per_account) as usize;
+    let heap_data_index_leaf = ((last % heap_meta.max_elements_per_account) * heap_meta.element_size) as usize;
     for i in 0..heap_meta.element_size as usize{
         heap_account_refs[0][i] = heap_account_refs[heap_accounts_index_leaf][heap_data_index_leaf];
     }
@@ -405,7 +406,6 @@ pub fn pop(
         }
     }
 
-    heap_meta.length -= 1;
     heap_meta.serialize(&mut *heap_meta_account.data.borrow_mut())?;
 
     Ok(ret)

@@ -98,6 +98,8 @@ fn compare(a: &Vec<u8>, b: &Vec<u8>) -> Result<i64, ProgramError> {
     }
 
     for i in (0..a.len()).rev(){
+        msg!("a: {}", a[i]);
+        msg!("b: {}", b[i]);
         if a[i] > b[i]{
             return Ok(1)
         }

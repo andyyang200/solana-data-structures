@@ -8,7 +8,7 @@ from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.system_program import SYS_PROGRAM_ID
 
 
-PID = PublicKey('7WnZixCi5J9cbUu6NDv2vKFpyg8i2hipEveRut86vmWq')
+PID = PublicKey('EVsbDYrp15AfLfGdKWQSg7o3QPhVdpcG9ujWoaFxpBQo')
 CLIENT_ADDRESS = "https://api.devnet.solana.com"
 
 class Heap:
@@ -49,7 +49,7 @@ class Heap:
         tx = Transaction().add(instruction)
         self.init_tx_sig = self.solana_client.send_transaction(tx, auth)
 
-    def push_front(self, data):
+    def push(self, data):
 
         keys = [
             AccountMeta(self.meta_key, False, True),
@@ -64,7 +64,7 @@ class Heap:
         tx_sig = self.solana_client.send_transaction(tx, self.auth)
         return tx_sig
 
-    def push_back(self, data):
+    def pop(self):
 
         keys = [
             AccountMeta(self.meta_key, False, True),
@@ -72,14 +72,14 @@ class Heap:
         for i in range(0, self.num_accounts):
             keys += [AccountMeta(self.account_keys[i], False, True)]
 
-        instruction_data = struct.pack('<B', 2) + data
+        instruction_data = struct.pack('<B', 2)
         instruction = TransactionInstruction(keys, self.program_id, instruction_data)
 
         tx = Transaction().add(instruction)
         tx_sig = self.solana_client.send_transaction(tx, self.auth)
         return tx_sig
 
-    def pop_front(self, num_elements):
+    def peek(self):
 
         keys = [
             AccountMeta(self.meta_key, False, True),
@@ -87,50 +87,7 @@ class Heap:
         for i in range(0, self.num_accounts):
             keys += [AccountMeta(self.account_keys[i], False, True)]
 
-        instruction_data = struct.pack('<BQ', 3, num_elements)
-        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
-
-        tx = Transaction().add(instruction)
-        tx_sig = self.solana_client.send_transaction(tx, self.auth)
-        return tx_sig
-
-    def pop_back(self, num_elements):
-
-        keys = [
-            AccountMeta(self.meta_key, False, True),
-        ]
-        for i in range(0, self.num_accounts):
-            keys += [AccountMeta(self.account_keys[i], False, True)]
-
-        instruction_data = struct.pack('<BQ', 4, num_elements)
-        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
-
-        tx = Transaction().add(instruction)
-        tx_sig = self.solana_client.send_transaction(tx, self.auth)
-        return tx_sig
-
-    def get(self, start, end):
-        keys = [
-            AccountMeta(self.meta_key, False, True),
-        ]
-        for i in range(0, self.num_accounts):
-            keys += [AccountMeta(self.account_keys[i], False, True)]
-
-        instruction_data = struct.pack('<BQQ', 5, start, end)
-        instruction = TransactionInstruction(keys, self.program_id, instruction_data)
-
-        tx = Transaction().add(instruction)
-        tx_sig = self.solana_client.send_transaction(tx, self.auth)
-        return tx_sig
-
-    def remove(self, start, end):
-        keys = [
-            AccountMeta(self.meta_key, False, True),
-        ]
-        for i in range(0, self.num_accounts):
-            keys += [AccountMeta(self.account_keys[i], False, True)]
-
-        instruction_data = struct.pack('<BQQ', 6, start, end)
+        instruction_data = struct.pack('<B', 3)
         instruction = TransactionInstruction(keys, self.program_id, instruction_data)
 
         tx = Transaction().add(instruction)
@@ -145,7 +102,7 @@ class Heap:
         for i in range(0, self.num_accounts):
             keys += [AccountMeta(self.account_keys[i], False, True)]
 
-        instruction_data = struct.pack('<B', 7)
+        instruction_data = struct.pack('<B', 4)
         instruction = TransactionInstruction(keys, self.program_id, instruction_data)
 
         tx = Transaction().add(instruction)
