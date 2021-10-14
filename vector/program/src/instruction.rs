@@ -246,7 +246,7 @@ pub fn length(
     let vector_meta_account = next_account_info(account_info_iter)?;
     let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
-    Ok((vector_meta.length))
+    Ok(vector_meta.length)
 }
 
 pub fn push(

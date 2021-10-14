@@ -10,7 +10,7 @@ from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.system_program import SYS_PROGRAM_ID
 
 
-PID = PublicKey('9QsoGSrDJK3oPhiPDmpoGpV3s671TrBpPYssNpz1w1Au')
+PID = PublicKey('9QsoGSrDJK3oPhiPDmpoGpV3s671TrBpPYssNpz1w1Au∫[')
 CLIENT_ADDRESS = "https://api.devnet.solana.com"
 
 class Vector:

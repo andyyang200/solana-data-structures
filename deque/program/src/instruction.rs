@@ -252,10 +252,10 @@ pub fn length(
 
     let account_info_iter = &mut accounts.iter().peekable();
 
-    let vector_meta_account = next_account_info(account_info_iter)?;
-    let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
+    let deque_meta_account = next_account_info(account_info_iter)?;
+    let mut deque_meta = DequeMeta::try_from_slice(&deque_meta_account.data.borrow())?;
 
-    Ok((vector_meta.length))
+    Ok(deque_meta.length)
 }
 
 pub fn push_front(
