@@ -246,16 +246,16 @@ pub fn initialize_deque_signed(
     Ok(())
 }
 
-pub fn length(
+pub fn get_meta(
     accounts: &[AccountInfo],
-) -> Result<u64, ProgramError> {
+) -> Result<DequeMeta, ProgramError> {
 
     let account_info_iter = &mut accounts.iter().peekable();
 
     let deque_meta_account = next_account_info(account_info_iter)?;
-    let mut deque_meta = DequeMeta::try_from_slice(&deque_meta_account.data.borrow())?;
+    let deque_meta = DequeMeta::try_from_slice(&deque_meta_account.data.borrow())?;
 
-    Ok(deque_meta.length)
+    Ok(deque_meta)
 }
 
 pub fn push_front(

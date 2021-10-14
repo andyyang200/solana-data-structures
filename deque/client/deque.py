@@ -1,5 +1,3 @@
-from account_info import Client
-from solana.publickey import PublicKey
 import struct
 
 from solana.rpc.api import Client
