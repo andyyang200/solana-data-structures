@@ -10,6 +10,8 @@ pub enum VectorError {
     PopFromEmpty,
     #[error("Overflow")]
     Overflow,
+    #[error("IndexOutofBounds")]
+    IndexOutofBounds,
 }
 
 impl From<VectorError> for ProgramError {

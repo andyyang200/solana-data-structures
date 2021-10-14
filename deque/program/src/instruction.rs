@@ -250,6 +250,8 @@ pub fn push_front(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
+    msg!("push_front");
+
     let account_info_iter = &mut accounts.iter().peekable();
 
     let deque_meta_account = next_account_info(account_info_iter)?;
@@ -271,7 +273,7 @@ pub fn push_front(
         msg!("Not enough space");
         return Err(DequeError::InsufficientSpace.into());
     }
-    let start = (deque_meta.start - num_elements + deque_meta.length) % deque_meta.max_length;
+    let start = (deque_meta.start - num_elements + deque_meta.max_length) % deque_meta.max_length;
 
     let mut cur_byte = start * deque_meta.element_size;
     let mut deque_accounts_index = (start / deque_meta.max_elements_per_account) as usize;
@@ -362,6 +364,7 @@ pub fn pop_slice_front(
     accounts: &[AccountInfo],
     num_elements: u64,
 ) -> Result<Vec<Vec<u8>>, ProgramError> {
+    msg!("pop_slice_front");
     let account_info_iter = &mut accounts.iter().peekable();
 
     let deque_meta_account = next_account_info(account_info_iter)?;
@@ -378,7 +381,7 @@ pub fn pop_slice_front(
         return Err(DequeError::PopFromEmpty.into());
     }
 
-    let mut ret = Vec::new();
+    let mut ret = Vec::with_capacity(num_elements as usize);
 
     let new_length = deque_meta.length - num_elements;
     let start = deque_meta.start;
@@ -398,7 +401,7 @@ pub fn pop_slice_front(
             deque_data_index = 0;
             cur_byte = 0;
         }
-        if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
+        else if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
             deque_data_index = 0;
@@ -433,7 +436,7 @@ pub fn pop_slice_back(
         return Err(DequeError::PopFromEmpty.into());
     }
 
-    let mut ret = Vec::new();
+    let mut ret = Vec::with_capacity(num_elements as usize);
 
     let new_length = deque_meta.length - num_elements;
     let start = (deque_meta.start + new_length + 1) % deque_meta.max_length;
@@ -453,7 +456,7 @@ pub fn pop_slice_back(
             deque_data_index = 0;
             cur_byte = 0;
         }
-        if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
+        else if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
             deque_data_index = 0;
@@ -505,9 +508,14 @@ pub fn slice(
 
     let deque_meta = DequeMeta::try_from_slice(&deque_meta_account.data.borrow())?;
 
-    let mut ret = Vec::new();
+    if start >= deque_meta.length || end >= deque_meta.length || start > end {
+        msg!("Index Out of Bounds");
+        return Err(DequeError::IndexOutofBounds.into());
+    }
 
     let num_elements = end - start;
+
+    let mut ret = Vec::with_capacity(num_elements as usize);
 
     let start = (deque_meta.start + start) % deque_meta.max_length;
     let mut cur_byte = start * deque_meta.element_size;
@@ -525,7 +533,7 @@ pub fn slice(
             deque_data_index = 0;
             cur_byte = 0;
         }
-        if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
+        else if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
             deque_data_index = 0;
@@ -563,14 +571,21 @@ pub fn remove_slice(
 
     let mut deque_meta = DequeMeta::try_from_slice(&deque_meta_account.data.borrow())?;
 
-    let mut deque_account_refs = Vec::new();
+    if start >= deque_meta.length || end >= deque_meta.length || start > end {
+        msg!("Index Out of Bounds");
+        return Err(DequeError::IndexOutofBounds.into());
+    }
+
+    let mut deque_account_refs = Vec::with_capacity(deque_accounts.len() as usize);
     for i in 0..deque_accounts.len(){
         deque_account_refs.push(deque_accounts[i].data.borrow_mut());
     }
 
-    let mut ret = Vec::new();
-
     let num_elements = end - start;
+
+    let mut ret = Vec::with_capacity(num_elements as usize);
+
+    let bytes_to_shift = (deque_meta.length - end) * deque_meta.element_size; // number of bytes to shift forward
 
     let start = (deque_meta.start + start) % deque_meta.max_length;
     let end = (deque_meta.start + end) % deque_meta.max_length;
@@ -587,7 +602,7 @@ pub fn remove_slice(
             deque_data_index = 0;
             cur_byte = 0;
         }
-        if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
+        else if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data_index = 0;
         }
@@ -601,7 +616,8 @@ pub fn remove_slice(
     let mut cur_byte_b = end * deque_meta.element_size;
     let mut deque_accounts_index_b = (end / deque_meta.max_elements_per_account) as usize;
     let mut deque_data_index_b = ((end % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
-    for _x in 0..(new_length - start) * deque_meta.element_size{
+
+    for _x in 0..bytes_to_shift{
         deque_account_refs[deque_accounts_index_a][deque_data_index_a] = deque_account_refs[deque_accounts_index_b][deque_data_index_b];
 
         deque_data_index_a += 1;
@@ -611,7 +627,7 @@ pub fn remove_slice(
             deque_data_index_a = 0;
             cur_byte_a = 0;
         }
-        if deque_data_index_a as u64 >= deque_meta.max_bytes_per_account{
+        else if deque_data_index_a as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index_a += 1;
             deque_data_index_a = 0;
         }
@@ -623,7 +639,7 @@ pub fn remove_slice(
             deque_data_index_b = 0;
             cur_byte_b = 0;
         }
-        if deque_data_index_b as u64 >= deque_meta.max_bytes_per_account{
+        else if deque_data_index_b as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index_b += 1;
             deque_data_index_b = 0;
         }

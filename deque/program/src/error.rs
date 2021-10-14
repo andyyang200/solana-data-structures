@@ -10,6 +10,8 @@ pub enum DequeError {
     PopFromEmpty,
     #[error("Overflow")]
     Overflow,
+    #[error("IndexOutofBounds")]
+    IndexOutofBounds,
 }
 
 impl From<DequeError> for ProgramError {

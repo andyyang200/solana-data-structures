@@ -358,6 +358,11 @@ pub fn slice(
 
     let vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
+    if start >= deque_meta.length || end >= deque_meta.length || start > end {
+        msg!("Index Out of Bounds");
+        return Err(VectorError::IndexOutofBounds.into());
+    }
+
     let num_elements = end - start;
 
     let mut ret = Vec::with_capacity(num_elements as usize);
@@ -406,6 +411,11 @@ pub fn remove_slice(
     }
 
     let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
+
+    if start >= deque_meta.length || end >= deque_meta.length || start > end {
+        msg!("Index Out of Bounds");
+        return Err(VectorError::IndexOutofBounds.into());
+    }
 
     let mut vector_account_refs = Vec::with_capacity(vector_accounts.len());
     for i in 0..vector_accounts.len(){
