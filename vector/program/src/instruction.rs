@@ -358,7 +358,7 @@ pub fn slice(
 
     let vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
-    if start >= deque_meta.length || end >= deque_meta.length || start > end {
+    if start >= vector_meta.length || end >= vector_meta.length || start > end {
         msg!("Index Out of Bounds");
         return Err(VectorError::IndexOutofBounds.into());
     }
@@ -412,7 +412,7 @@ pub fn remove_slice(
 
     let mut vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
-    if start >= deque_meta.length || end >= deque_meta.length || start > end {
+    if start >= vector_meta.length || end >= vector_meta.length || start > end {
         msg!("Index Out of Bounds");
         return Err(VectorError::IndexOutofBounds.into());
     }
