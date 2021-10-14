@@ -103,6 +103,8 @@ pub fn initialize_deque(
 
     deque_meta.max_length = max_length;
     deque_meta.element_size = element_size;
+    deque_meta.max_bytes = max_length * element_size;
+    deque_meta.start = 0;
     deque_meta.length = 0;
     deque_meta.max_elements_per_account = MAX_ACCOUNT_SIZE / element_size;
     deque_meta.max_bytes_per_account = deque_meta.max_elements_per_account * element_size;
@@ -196,6 +198,7 @@ pub fn initialize_deque_signed(
 
     deque_meta.max_length = max_length;
     deque_meta.element_size = element_size;
+    deque_meta.max_bytes = max_length * element_size;
     deque_meta.start = 0;
     deque_meta.length = 0;
     deque_meta.max_elements_per_account = MAX_ACCOUNT_SIZE / element_size;
@@ -247,6 +250,55 @@ pub fn push_front(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter().peekable();
+
+    let deque_meta_account = next_account_info(account_info_iter)?;
+
+    let mut deque_accounts = Vec::new();
+    while account_info_iter.peek().is_some(){
+        deque_accounts.push(next_account_info(account_info_iter)?);
+    }
+
+    let mut deque_meta = DequeMeta::try_from_slice(&deque_meta_account.data.borrow())?;
+
+    if data.len() % (deque_meta.element_size) as usize != 0{
+        msg!("Data length not multiple of element size");
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    let num_elements = data.len() as u64 / deque_meta.element_size;
+    if deque_meta.length + num_elements > deque_meta.max_length{
+        msg!("Not enough space");
+        return Err(DequeError::InsufficientSpace.into());
+    }
+    let start = (deque_meta.start - num_elements + deque_meta.length) % deque_meta.max_length;
+
+    let mut cur_byte = start * deque_meta.element_size;
+    let mut deque_accounts_index = (start / deque_meta.max_elements_per_account) as usize;
+    let mut deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+    let mut deque_data_index = ((start % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
+
+    for data_index in 0..data.len(){
+        deque_data[deque_data_index] = data[data_index];
+        deque_data_index += 1;
+        cur_byte += 1;
+        if cur_byte >= deque_meta.max_bytes{
+            deque_accounts_index = 0;
+            deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+            deque_data_index = 0;
+            cur_byte = 0;
+        }
+        else if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
+            deque_accounts_index += 1;
+            deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+            deque_data_index = 0;
+        }
+    }
+
+    deque_meta.start = start;
+    deque_meta.length += num_elements;
+    deque_meta.serialize(&mut *deque_meta_account.data.borrow_mut())?;
+
     Ok(())
 }
 
@@ -271,27 +323,36 @@ pub fn push_back(
         return Err(ProgramError::InvalidArgument);
     }
 
-    let delta = data.len() as u64 / deque_meta.element_size;
-    if deque_meta.length + delta > deque_meta.max_length{
+    let num_elements = data.len() as u64 / deque_meta.element_size;
+    if deque_meta.length + num_elements > deque_meta.max_length{
         msg!("Not enough space");
         return Err(DequeError::InsufficientSpace.into());
     }
+    let start = (deque_meta.start + deque_meta.length) % deque_meta.max_length;
 
-    let mut deque_accounts_index = (deque_meta.length / deque_meta.max_elements_per_account) as usize;
+    let mut cur_byte = start * deque_meta.element_size;
+    let mut deque_accounts_index = (start / deque_meta.max_elements_per_account) as usize;
     let mut deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
-    let mut deque_data_index = ((deque_meta.length % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
+    let mut deque_data_index = ((start % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
 
     for data_index in 0..data.len(){
         deque_data[deque_data_index] = data[data_index];
         deque_data_index += 1;
-        if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
+        cur_byte += 1;
+        if cur_byte >= deque_meta.max_bytes{
+            deque_accounts_index = 0;
+            deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+            deque_data_index = 0;
+            cur_byte = 0;
+        }
+        else if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
             deque_data_index = 0;
         }
     }
 
-    deque_meta.length += delta;
+    deque_meta.length += num_elements;
     deque_meta.serialize(&mut *deque_meta_account.data.borrow_mut())?;
 
     Ok(())
@@ -301,7 +362,54 @@ pub fn pop_slice_front(
     accounts: &[AccountInfo],
     num_elements: u64,
 ) -> Result<Vec<Vec<u8>>, ProgramError> {
-    Ok(Vec::new())
+    let account_info_iter = &mut accounts.iter().peekable();
+
+    let deque_meta_account = next_account_info(account_info_iter)?;
+
+    let mut deque_accounts = Vec::new();
+    while account_info_iter.peek().is_some(){
+        deque_accounts.push(next_account_info(account_info_iter)?);
+    }
+
+    let mut deque_meta = DequeMeta::try_from_slice(&deque_meta_account.data.borrow())?;
+
+    if deque_meta.length < num_elements{
+        msg!("Not enough elements to pop");
+        return Err(DequeError::PopFromEmpty.into());
+    }
+
+    let mut ret = Vec::new();
+
+    let new_length = deque_meta.length - num_elements;
+    let start = deque_meta.start;
+
+    let mut cur_byte = start * deque_meta.element_size;
+    let mut deque_accounts_index = (start / deque_meta.max_elements_per_account) as usize;
+    let mut deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+    let mut deque_data_index = ((start % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
+
+    for _x in 0..num_elements{
+        ret.push(deque_data[deque_data_index..(deque_data_index + deque_meta.element_size as usize)].to_vec());
+        deque_data_index += deque_meta.element_size as usize;
+        cur_byte += deque_meta.element_size;
+        if cur_byte >= deque_meta.max_bytes{
+            deque_accounts_index = 0;
+            deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+            deque_data_index = 0;
+            cur_byte = 0;
+        }
+        if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
+            deque_accounts_index += 1;
+            deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+            deque_data_index = 0;
+        }
+    }
+
+    deque_meta.length = new_length;
+    deque_meta.start = (deque_meta.start + num_elements) % deque_meta.max_length;
+    deque_meta.serialize(&mut *deque_meta_account.data.borrow_mut())?;
+
+    Ok(ret)
 }
 
 pub fn pop_slice_back(
@@ -328,8 +436,9 @@ pub fn pop_slice_back(
     let mut ret = Vec::new();
 
     let new_length = deque_meta.length - num_elements;
-    let start = new_length + 1;
+    let start = (deque_meta.start + new_length + 1) % deque_meta.max_length;
 
+    let mut cur_byte = start * deque_meta.element_size;
     let mut deque_accounts_index = (start / deque_meta.max_elements_per_account) as usize;
     let mut deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
     let mut deque_data_index = ((start % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
@@ -337,6 +446,13 @@ pub fn pop_slice_back(
     for _x in 0..num_elements{
         ret.push(deque_data[deque_data_index..(deque_data_index + deque_meta.element_size as usize)].to_vec());
         deque_data_index += deque_meta.element_size as usize;
+        cur_byte += deque_meta.element_size;
+        if cur_byte >= deque_meta.max_bytes{
+            deque_accounts_index = 0;
+            deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+            deque_data_index = 0;
+            cur_byte = 0;
+        }
         if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
@@ -393,6 +509,8 @@ pub fn slice(
 
     let num_elements = end - start;
 
+    let start = (deque_meta.start + start) % deque_meta.max_length;
+    let mut cur_byte = start * deque_meta.element_size;
     let mut deque_accounts_index = (start / deque_meta.max_elements_per_account) as usize;
     let mut deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
     let mut deque_data_index = ((start % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
@@ -400,6 +518,13 @@ pub fn slice(
     for _x in 0..num_elements{
         ret.push(deque_data[deque_data_index..(deque_data_index + deque_meta.element_size as usize)].to_vec());
         deque_data_index += deque_meta.element_size as usize;
+        cur_byte += deque_meta.element_size;
+        if cur_byte >= deque_meta.max_bytes{
+            deque_accounts_index = 0;
+            deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
+            deque_data_index = 0;
+            cur_byte = 0;
+        }
         if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data = deque_accounts[deque_accounts_index].data.borrow_mut();
@@ -447,11 +572,21 @@ pub fn remove_slice(
 
     let num_elements = end - start;
 
+    let start = (deque_meta.start + start) % deque_meta.max_length;
+    let end = (deque_meta.start + end) % deque_meta.max_length;
+
+    let mut cur_byte = start * deque_meta.element_size;
     let mut deque_accounts_index = (start / deque_meta.max_elements_per_account) as usize;
     let mut deque_data_index = ((start % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
     for _x in 0..num_elements{
         ret.push(deque_account_refs[deque_accounts_index][deque_data_index..(deque_data_index + deque_meta.element_size as usize)].to_vec());
         deque_data_index += deque_meta.element_size as usize;
+        cur_byte += deque_meta.element_size;
+        if cur_byte >= deque_meta.max_bytes{
+            deque_accounts_index = 0;
+            deque_data_index = 0;
+            cur_byte = 0;
+        }
         if deque_data_index as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index += 1;
             deque_data_index = 0;
@@ -460,19 +595,34 @@ pub fn remove_slice(
 
     let new_length = deque_meta.length - num_elements;
 
+    let mut cur_byte_a = start * deque_meta.element_size;
     let mut deque_accounts_index_a = (start / deque_meta.max_elements_per_account) as usize;
     let mut deque_data_index_a = ((start % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
+    let mut cur_byte_b = end * deque_meta.element_size;
     let mut deque_accounts_index_b = (end / deque_meta.max_elements_per_account) as usize;
     let mut deque_data_index_b = ((end % deque_meta.max_elements_per_account) * deque_meta.element_size) as usize;
     for _x in 0..(new_length - start) * deque_meta.element_size{
         deque_account_refs[deque_accounts_index_a][deque_data_index_a] = deque_account_refs[deque_accounts_index_b][deque_data_index_b];
+
         deque_data_index_a += 1;
-        deque_data_index_b += 1;
+        cur_byte_a += 1;
+        if cur_byte_a >= deque_meta.max_bytes{
+            deque_accounts_index_a = 0;
+            deque_data_index_a = 0;
+            cur_byte_a = 0;
+        }
         if deque_data_index_a as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index_a += 1;
             deque_data_index_a = 0;
         }
-
+        
+        deque_data_index_b += 1;
+        cur_byte_b += 1;
+        if cur_byte_b >= deque_meta.max_bytes{
+            deque_accounts_index_b = 0;
+            deque_data_index_b = 0;
+            cur_byte_b = 0;
+        }
         if deque_data_index_b as u64 >= deque_meta.max_bytes_per_account{
             deque_accounts_index_b += 1;
             deque_data_index_b = 0;

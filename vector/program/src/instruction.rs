@@ -258,8 +258,8 @@ pub fn push(
         return Err(ProgramError::InvalidArgument);
     }
 
-    let delta = data.len() as u64 / vector_meta.element_size;
-    if vector_meta.length + delta > vector_meta.max_length{
+    let num_elements = data.len() as u64 / vector_meta.element_size;
+    if vector_meta.length + num_elements > vector_meta.max_length{
         msg!("Not enough space");
         return Err(VectorError::InsufficientSpace.into());
     }
@@ -278,7 +278,7 @@ pub fn push(
         }
     }
 
-    vector_meta.length += delta;
+    vector_meta.length += num_elements;
     vector_meta.serialize(&mut *vector_meta_account.data.borrow_mut())?;
 
     Ok(())
@@ -435,13 +435,14 @@ pub fn remove_slice(
     let mut vector_data_index_b = ((end % vector_meta.max_elements_per_account) * vector_meta.element_size) as usize;
     for _x in 0..(new_length - start) * vector_meta.element_size{
         vector_account_refs[vector_accounts_index_a][vector_data_index_a] = vector_account_refs[vector_accounts_index_b][vector_data_index_b];
+
         vector_data_index_a += 1;
-        vector_data_index_b += 1;
         if vector_data_index_a as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index_a += 1;
             vector_data_index_a = 0;
         }
 
+        vector_data_index_b += 1;
         if vector_data_index_b as u64 >= vector_meta.max_bytes_per_account{
             vector_accounts_index_b += 1;
             vector_data_index_b = 0;
