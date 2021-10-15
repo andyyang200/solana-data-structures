@@ -14,6 +14,7 @@ use crate::{error::HeapError, state::{MAX_ACCOUNT_SIZE, HEAP_META_LEN, HeapMeta}
 
 #[derive(BorshDeserialize, PartialEq, Debug)]
 pub struct InitializeParams{
+    pub start_length: u64,
     pub max_length: u64,
     pub element_size: u64,
 }
@@ -43,6 +44,7 @@ impl Instruction {
 
 pub fn initialize_heap(
     accounts: &[AccountInfo],
+    data: &[u8],
     max_length: u64,
     element_size: u64,
     program_id: &Pubkey,
@@ -131,6 +133,7 @@ pub fn initialize_heap(
 
 pub fn initialize_heap_signed(
     accounts: &[AccountInfo],
+    data: &[u8],
     max_length: u64,
     element_size: u64,
     program_id: &Pubkey,
