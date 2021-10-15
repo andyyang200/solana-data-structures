@@ -22,10 +22,10 @@ impl Processor {
         match instruction {
             Instruction::Initialize => {
                 msg!("Instruction: Initialize");
-                let (inputs, data_seeds) = rest.split_at(16);
+                let (inputs, data_seeds) = rest.split_at(24);
                 let params = InitializeParams::try_from_slice(inputs).unwrap();
                 let (data, seeds) = data_seeds.split_at((params.start_length*params.element_size) as usize);
-                Self::process_initialize(accounts, data, params.max_length, params.element_size, program_id, seeds)
+                Self::process_initialize(accounts, params.max_length, params.element_size, data, program_id, seeds)
             },
             Instruction::Push => {
                 msg!("Instruction: Push");
@@ -48,16 +48,16 @@ impl Processor {
 
     fn process_initialize(
         accounts: &[AccountInfo],
-        data: &[u8],
         max_length: u64,
         element_size: u64,
+        data: &[u8],
         program_id: &Pubkey,
         seeds: &[u8],
     ) -> ProgramResult {
         let auth = next_account_info(&mut accounts.iter())?;
         let (meta_bumper, heap_bumper_seeds) = seeds.split_first().ok_or(ProgramError::InvalidInstructionData)?;
         let meta_seeds = &[auth.key.as_ref(), &max_length.to_le_bytes(), &element_size.to_le_bytes(), &[*meta_bumper]];
-        initialize_heap_signed(accounts, data, max_length, element_size, program_id, meta_seeds, heap_bumper_seeds)?;
+        initialize_heap_signed(accounts, max_length, element_size, data, &compare, program_id, meta_seeds, heap_bumper_seeds)?;
         Ok(())
     }
 
@@ -100,8 +100,6 @@ fn compare(a: &Vec<u8>, b: &Vec<u8>) -> Result<i64, ProgramError> {
     }
 
     for i in (0..a.len()).rev(){
-        msg!("a: {}", a[i]);
-        msg!("b: {}", b[i]);
         if a[i] > b[i]{
             return Ok(1)
         }

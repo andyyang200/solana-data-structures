@@ -13,7 +13,7 @@ CLIENT_ADDRESS = "https://api.devnet.solana.com"
 
 class Heap:
     
-    def __init__(self, auth, data=b'', max_length=1048576, element_size=1, num_accounts = 10, program_id=PID, client_address=CLIENT_ADDRESS, run_transaction = True):
+    def __init__(self, auth, max_length=1048576, element_size=1, data=b'', num_accounts = 10, program_id=PID, client_address=CLIENT_ADDRESS, run_transaction = True):
         assert(isinstance(auth, Keypair))
         self.solana_client = Client(client_address)
 
@@ -48,8 +48,8 @@ class Heap:
         if len(data) % element_size:
             raise ValueError("Size of the data given is not a multiple of the element size!")
         start_length = len(data)//element_size
-        instruction_data = struct.pack('<BQQQB'+'B'*(len(data) + num_accounts), 0, start_length, max_length, element_size,
-                                       self.meta_bumper, *data, *self.account_bumpers)
+        instruction_data = struct.pack('<BQQQ'+'B'*(len(data) + num_accounts + 1), 0, start_length, max_length, element_size,
+                                       *data, self.meta_bumper, *self.account_bumpers)
         instruction = TransactionInstruction(keys, program_id, instruction_data)
 
         tx = Transaction().add(instruction)

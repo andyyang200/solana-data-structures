@@ -1,6 +1,6 @@
 use borsh::{BorshSerialize, BorshDeserialize};
 
-pub const MAX_ACCOUNT_SIZE : u64 = 5;
+pub const MAX_ACCOUNT_SIZE : u64 = 10 * 1024 * 1024;
 pub const HEAP_META_LEN : u64 = 48;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
