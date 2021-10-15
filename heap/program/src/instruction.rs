@@ -48,7 +48,6 @@ fn push_down(
     n: usize,
     compare: impl Fn(&Vec<u8>, &Vec<u8>) -> Result<i64, ProgramError>
 ) -> ProgramResult {
-    msg!("{}", i);
 
     let mut smallest = i; // Initialize largest as root
     let l = 2 * i + 1; // left = 2*i + 1
@@ -108,8 +107,6 @@ pub fn initialize_heap(
     while account_info_iter.peek().is_some(){
         heap_accounts.push(next_account_info(account_info_iter)?);
     }
-
-    msg!("Done parsing accounts and instruction data");
 
     if data.len() % element_size as usize != 0{
         msg!("Data length not multiple of element size");
@@ -204,8 +201,6 @@ pub fn initialize_heap(
         }
     }
 
-    msg!("Completed initialize"); 
-
     Ok(())
 }
 
@@ -219,7 +214,6 @@ pub fn initialize_heap_signed(
     meta_seeds: &[&[u8]],
     heap_bump_seeds: &[u8],
 ) -> ProgramResult {
-    msg!("Initialize heap signed");
 
     let account_info_iter = &mut accounts.iter().peekable();
     let auth = next_account_info(account_info_iter)?;
@@ -231,8 +225,6 @@ pub fn initialize_heap_signed(
     while account_info_iter.peek().is_some(){
         heap_accounts.push(next_account_info(account_info_iter)?);
     }
-
-    msg!("Done parsing accounts and instruction data");
 
     if data.len() % element_size as usize != 0{
         msg!("Data length not multiple of element size");
@@ -335,8 +327,6 @@ pub fn initialize_heap_signed(
         }
     }
 
-    msg!("Completed initialize"); 
-
     Ok(())
 }
 
@@ -396,7 +386,6 @@ pub fn push(
     let element_cur = (heap_account_refs[heap_accounts_index_cur][heap_data_index_cur..heap_data_index_cur + heap_meta.element_size as usize]).to_vec();
     while cur != 0{
         let par = (cur - 1) / 2;
-        msg!("par: {}", par);
         let heap_accounts_index_par = (par / heap_meta.max_elements_per_account) as usize;
         let heap_data_index_par = ((par % heap_meta.max_elements_per_account) * heap_meta.element_size) as usize;
 
@@ -404,7 +393,6 @@ pub fn push(
         if compare(&element_cur, &element_par)? >= 0{
             break;
         }
-        msg!("swapping with parent");
         // swap with parent
         for i in 0..heap_meta.element_size as usize{
             let tmp = heap_account_refs[heap_accounts_index_cur][heap_data_index_cur + i];

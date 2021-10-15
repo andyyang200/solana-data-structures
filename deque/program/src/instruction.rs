@@ -75,8 +75,6 @@ pub fn initialize_deque(
     while account_info_iter.peek().is_some(){
         deque_accounts.push(next_account_info(account_info_iter)?);
     }
-
-    msg!("Done parsing accounts and instruction data");
     
     // create deque meta account if it doesn't exist
     if deque_meta_account.data_len() == 0{
@@ -142,8 +140,6 @@ pub fn initialize_deque(
         }
     }
 
-    msg!("Completed initialize"); 
-
     Ok(())
 }
 
@@ -155,7 +151,6 @@ pub fn initialize_deque_signed(
     meta_seeds: &[&[u8]],
     deque_bump_seeds: &[u8],
 ) -> ProgramResult {
-    msg!("Initialize deque signed");
 
     let account_info_iter = &mut accounts.iter().peekable();
     let auth = next_account_info(account_info_iter)?;
@@ -167,8 +162,6 @@ pub fn initialize_deque_signed(
     while account_info_iter.peek().is_some(){
         deque_accounts.push(next_account_info(account_info_iter)?);
     }
-
-    msg!("Done parsing accounts and instruction data");
     
     // create deque meta account if it doesn't exist
     if deque_meta_account.data_len() == 0{
@@ -241,8 +234,6 @@ pub fn initialize_deque_signed(
         deque_accounts_index += 1;
     }
 
-    msg!("Completed initialize"); 
-
     Ok(())
 }
 
@@ -262,7 +253,6 @@ pub fn push_front(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    msg!("push_front");
 
     let account_info_iter = &mut accounts.iter().peekable();
 
@@ -376,7 +366,6 @@ pub fn pop_slice_front(
     accounts: &[AccountInfo],
     num_elements: u64,
 ) -> Result<Vec<Vec<u8>>, ProgramError> {
-    msg!("pop_slice_front");
     let account_info_iter = &mut accounts.iter().peekable();
 
     let deque_meta_account = next_account_info(account_info_iter)?;

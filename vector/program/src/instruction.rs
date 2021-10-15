@@ -149,7 +149,6 @@ pub fn initialize_vector_signed(
     meta_seeds: &[&[u8]],
     vector_bump_seeds: &[u8],
 ) -> ProgramResult {
-    msg!("Initialize vector signed");
 
     let account_info_iter = &mut accounts.iter().peekable();
     let auth = next_account_info(account_info_iter)?;
@@ -161,8 +160,6 @@ pub fn initialize_vector_signed(
     while account_info_iter.peek().is_some(){
         vector_accounts.push(next_account_info(account_info_iter)?);
     }
-
-    msg!("Done parsing accounts and instruction data");
     
     // create vector meta account if it doesn't exist
     if vector_meta_account.data_len() == 0{
@@ -232,21 +229,19 @@ pub fn initialize_vector_signed(
         vector_accounts_index += 1;
     }
 
-    msg!("Completed initialize"); 
-
     Ok(())
 }
 
-pub fn get_meta(
+pub fn length(
     accounts: &[AccountInfo],
-) -> Result<VectorMeta, ProgramError> {
+) -> Result<u64, ProgramError> {
 
     let account_info_iter = &mut accounts.iter().peekable();
 
     let vector_meta_account = next_account_info(account_info_iter)?;
     let vector_meta = VectorMeta::try_from_slice(&vector_meta_account.data.borrow())?;
 
-    Ok(vector_meta)
+    Ok(vector_meta.length)
 }
 
 pub fn push(
